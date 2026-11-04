@@ -55,11 +55,6 @@ jobs:
         run: |
           MESA_BASE_COMMIT="${MESA_BASE_COMMIT}" ./tools/setup_mesa.sh
 
-      - name: Run offline bridge regression test
-        run: |
-          gcc -Wall -Wextra -Werror -O2 tests/test_bridge_v25_mock.c -o /tmp/test_bridge
-          /tmp/test_bridge
-
       - name: Build Mesa native helper tools
         run: |
           meson setup build-native research/mesa-src \
@@ -83,6 +78,11 @@ jobs:
         run: |
           export PATH="$PWD/tools/native-bin:$PATH"
           ./tools/build_driver.sh
+
+      - name: Run offline bridge regression test
+        run: |
+          gcc -Wall -Wextra -Werror -O2 tests/test_bridge_v25_mock.c -o /tmp/test_bridge
+          /tmp/test_bridge
 
       - name: Upload driver ZIPs
         uses: actions/upload-artifact@v4

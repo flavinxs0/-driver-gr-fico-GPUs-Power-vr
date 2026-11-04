@@ -112,7 +112,10 @@ def build_packages():
         "file_format_version": "1.0.1",
         "ICD": {
             "library_path": "libvulkan_powervr_mesa.so",
-            "api_version": "1.4.363",
+            # Keep the manifest conservative until the Mesa ICD has been
+            # validated against the target MT6855 device. The vendor stack
+            # reports Vulkan 1.1.170 in the captured vkjson profile.
+            "api_version": "1.1.170",
             "library_arch": "64"
         }
     }
