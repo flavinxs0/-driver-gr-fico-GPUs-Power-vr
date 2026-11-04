@@ -1,0 +1,32 @@
+From 839915adda568fc9f45dddd3a97760c288f80a8b Mon Sep 17 00:00:00 2001
+From: bxm-build <bxm-build@example.invalid>
+Date: Wed, 4 Nov 2026 23:16:15 +0000
+Subject: [PATCH] imagination: target MT6855 Rogue DDK 1.15
+
+---
+ src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv_bridge.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv_bridge.h b/src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv_bridge.h
+index d4c64f71233..0ca981d5718 100644
+--- a/src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv_bridge.h
++++ b/src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv_bridge.h
+@@ -138,13 +138,13 @@
+     SUPPORT_BUFFER_SYNC_SET_OFFSET | OPTIONS_BIT31)
+ 
+ #define PVR_SRV_VERSION_MAJ 1U
+-#define PVR_SRV_VERSION_MIN 17U
++#define PVR_SRV_VERSION_MIN 15U
+ 
+ #define PVR_SRV_VERSION                                              \
+    (((uint32_t)((uint32_t)(PVR_SRV_VERSION_MAJ) & 0xFFFFU) << 16U) | \
+     (((PVR_SRV_VERSION_MIN) & 0xFFFFU) << 0U))
+ 
+-#define PVR_SRV_VERSION_BUILD 6256262
++#define PVR_SRV_VERSION_BUILD 6133110
+ 
+ /*! This flags gets set if the client is 64 Bit compatible. */
+ #define PVR_SRV_FLAGS_CLIENT_64BIT_COMPAT BITFIELD_BIT(5U)
+-- 
+2.43.0
+

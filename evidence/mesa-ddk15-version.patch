@@ -1,0 +1,20 @@
+[1mdiff --git a/src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv_bridge.h b/src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv_bridge.h[m
+[1mindex d4c64f71233..0ca981d5718 100644[m
+[1m--- a/src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv_bridge.h[m
+[1m+++ b/src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv_bridge.h[m
+[36m@@ -138,13 +138,13 @@[m
+     SUPPORT_BUFFER_SYNC_SET_OFFSET | OPTIONS_BIT31)[m
+ [m
+ #define PVR_SRV_VERSION_MAJ 1U[m
+[31m-#define PVR_SRV_VERSION_MIN 17U[m
+[32m+[m[32m#define PVR_SRV_VERSION_MIN 15U[m
+ [m
+ #define PVR_SRV_VERSION                                              \[m
+    (((uint32_t)((uint32_t)(PVR_SRV_VERSION_MAJ) & 0xFFFFU) << 16U) | \[m
+     (((PVR_SRV_VERSION_MIN) & 0xFFFFU) << 0U))[m
+ [m
+[31m-#define PVR_SRV_VERSION_BUILD 6256262[m
+[32m+[m[32m#define PVR_SRV_VERSION_BUILD 6133110[m
+ [m
+ /*! This flags gets set if the client is 64 Bit compatible. */[m
+ #define PVR_SRV_FLAGS_CLIENT_64BIT_COMPAT BITFIELD_BIT(5U)[m

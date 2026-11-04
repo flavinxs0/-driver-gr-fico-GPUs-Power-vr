@@ -1,0 +1,91 @@
+name: Build Mesa PVR Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'patches/**'
+      - 'tools/**'
+      - 'tests/**'
+      - '.github/workflows/build-driver.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      MESA_BASE_COMMIT: 0d94b3f397fb9cf8470bb5600ada8af79ff5361a
+      ANDROID_API: '35'
+      ANDROID_NDK_VERSION: 28.2.13676358
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bison flex meson ninja-build pkg-config python3-mako python3-yaml \
+            libdrm-dev libelf-dev libunwind-dev libxcb1-dev libxcb-randr0-dev \
+            libxcb-present-dev libxcb-sync-dev libxcb-xfixes0-dev libxcb-dri3-dev \
+            libxcb-shm0-dev libxcb-keysyms1-dev libx11-xcb-dev libxshmfence-dev \
+            llvm clang libclang-cpp18-dev spirv-tools spirv-headers \
+            libllvmspirvlib-18-dev llvm-spirv-18 zlib1g-dev
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK and NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: |
+          sdkmanager "platform-tools" "platforms;android-${ANDROID_API}" "ndk;${ANDROID_NDK_VERSION}"
+          echo "ANDROID_NDK_ROOT=${ANDROID_SDK_ROOT}/ndk/${ANDROID_NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Run offline bridge regression test
+        run: |
+          gcc -Wall -Wextra -Werror -O2 tests/test_bridge_v25_mock.c -o /tmp/test_bridge
+          /tmp/test_bridge
+
+      - name: Prepare Mesa base and apply patches
+        run: |
+          MESA_BASE_COMMIT="${MESA_BASE_COMMIT}" ./tools/setup_mesa.sh
+
+      - name: Build Mesa native helper tools
+        run: |
+          meson setup build-native research/mesa-src \
+            -Dvulkan-drivers=imagination \
+            -Dgallium-drivers= \
+            -Dplatforms=x11 \
+            -Dbuildtype=debugoptimized \
+            -Dtools=drm-shim
+          ninja -C build-native \
+            src/compiler/clc/mesa_clc \
+            src/compiler/spirv/vtn_bindgen2 \
+            src/imagination/pco/uscgen/pco_clc \
+            src/imagination/pdsc/pdsc_precomp
+          mkdir -p tools/native-bin
+          cp build-native/src/compiler/clc/mesa_clc tools/native-bin/
+          cp build-native/src/compiler/spirv/vtn_bindgen2 tools/native-bin/
+          cp build-native/src/imagination/pco/uscgen/pco_clc tools/native-bin/
+          cp build-native/src/imagination/pdsc/pdsc_precomp tools/native-bin/
+
+      - name: Build Android driver and packages
+        run: |
+          export PATH="$PWD/tools/native-bin:$PATH"
+          ./tools/build_driver.sh
+
+      - name: Upload driver ZIPs
+        uses: actions/upload-artifact@v4
+        with:
+          name: mesa-pvr-bxm8256-android
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 14
