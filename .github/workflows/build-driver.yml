@@ -51,14 +51,14 @@ jobs:
           sdkmanager "platform-tools" "platforms;android-${ANDROID_API}" "ndk;${ANDROID_NDK_VERSION}"
           echo "ANDROID_NDK_ROOT=${ANDROID_SDK_ROOT}/ndk/${ANDROID_NDK_VERSION}" >> "$GITHUB_ENV"
 
+      - name: Prepare Mesa base and apply patches
+        run: |
+          MESA_BASE_COMMIT="${MESA_BASE_COMMIT}" ./tools/setup_mesa.sh
+
       - name: Run offline bridge regression test
         run: |
           gcc -Wall -Wextra -Werror -O2 tests/test_bridge_v25_mock.c -o /tmp/test_bridge
           /tmp/test_bridge
-
-      - name: Prepare Mesa base and apply patches
-        run: |
-          MESA_BASE_COMMIT="${MESA_BASE_COMMIT}" ./tools/setup_mesa.sh
 
       - name: Build Mesa native helper tools
         run: |
