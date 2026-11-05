@@ -79,6 +79,10 @@ jobs:
           cp build-native/src/imagination/pdsc/pdsc_precomp tools/native-bin/
 
       - name: Build Android driver and packages
+        env:
+          # Never resolve host x86_64 libdrm through pkg-config for the
+          # Android cross-build; use Mesa's static fallback instead.
+          PKG_CONFIG_LIBDIR: /nonexistent
         run: |
           export PATH="$PWD/tools/native-bin:$PATH"
           ./tools/build_driver.sh
