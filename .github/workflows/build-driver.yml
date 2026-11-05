@@ -62,7 +62,9 @@ jobs:
           meson setup build-native research/mesa-src \
             -Dvulkan-drivers=imagination \
             -Dgallium-drivers= \
-            -Dplatforms=x11 \
+            -Dplatforms= \
+            -Degl=disabled \
+            -Dgbm=disabled \
             -Dbuildtype=debugoptimized \
             -Dtools=drm-shim
           ninja -C build-native \
