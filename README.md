@@ -16,6 +16,10 @@ A análise conjunta dos pacotes PowerVR, Mesa PVR, DXVK, logs do Moto G56 e do w
 
 O wrapper do Drive é apenas uma camada de loader/hook e não contém `libvulkan_powervr_mesa.so`. Binários proprietários MediaTek/PowerVR e o módulo de kernel não são versionados neste repositório; são usados somente como evidência estática para ABI e compatibilidade.
 
+A análise dos dois logs recentes do Moto G73 está em [`evidence/dragonburst-moto-g73-2026-11-06.md`](evidence/dragonburst-moto-g73-2026-11-06.md). Ela separa o fallback do driver de sistema da falha de carregamento do wrapper e documenta por que a causa do crash Mesa ainda precisa ser capturada.
+
+Para coletar propriedades, nodes gráficos, módulos, AVCs do kernel e logcat após reproduzir a falha, use `tools/collect_android_pvr_trace.sh` em um computador com Android platform-tools. O script não limpa os logs; revise e remova dados pessoais do `logcat.txt` antes de compartilhar.
+
 ## Estado
 
 O build host e os testes offline foram aprovados. O build Android e o ZIP final só devem ser considerados prontos após uma execução verde do workflow e inspeção do artefato gerado.
