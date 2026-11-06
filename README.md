@@ -10,6 +10,12 @@ A compilação Android é executada pelo GitHub Actions em um runner x86_64 com 
 
 O patch 0006 altera a negociação do cliente para DDK 1.15/build 6133110. Os patches 0002 e 0003 preservam código experimental de bridge B-Series, mas o caminho usado pelo MT6855 é o caminho genérico Mesa 1.x; o cabeçalho v25 não deve ser selecionado para esse módulo.
 
+## Evidências reunidas
+
+A análise conjunta dos pacotes PowerVR, Mesa PVR, DXVK, logs do Moto G56 e do wrapper Adrenotools está em [`evidence/unified-powervr-analysis-2026-11-05.md`](evidence/unified-powervr-analysis-2026-11-05.md). A análise específica do ZIP compartilhado no Google Drive está em [`evidence/drive-log-wrapper-analysis-2026-11-05.md`](evidence/drive-log-wrapper-analysis-2026-11-05.md).
+
+O wrapper do Drive é apenas uma camada de loader/hook e não contém `libvulkan_powervr_mesa.so`. Binários proprietários MediaTek/PowerVR e o módulo de kernel não são versionados neste repositório; são usados somente como evidência estática para ABI e compatibilidade.
+
 ## Estado
 
 O build host e os testes offline foram aprovados. O build Android e o ZIP final só devem ser considerados prontos após uma execução verde do workflow e inspeção do artefato gerado.
