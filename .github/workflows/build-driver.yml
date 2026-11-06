@@ -78,7 +78,7 @@ jobs:
           cp build-native/src/imagination/pco/uscgen/pco_clc tools/native-bin/
           cp build-native/src/imagination/pdsc/pdsc_precomp tools/native-bin/
 
-      - name: Build Android driver and packages
+      - name: Build Android driver package
         env:
           # Never resolve host x86_64 libdrm through pkg-config for the
           # Android cross-build; use Mesa's static fallback instead.
@@ -92,10 +92,10 @@ jobs:
           gcc -Wall -Wextra -Werror -O2 tests/test_bridge_v25_mock.c -o /tmp/test_bridge
           /tmp/test_bridge
 
-      - name: Upload driver ZIPs
+      - name: Upload primary Adrenotools ZIP
         uses: actions/upload-artifact@v4
         with:
           name: mesa-pvr-bxm8256-android
-          path: dist/*.zip
+          path: dist/vulkan_pvr_bxm8256_adrenotools.zip
           if-no-files-found: error
           retention-days: 14

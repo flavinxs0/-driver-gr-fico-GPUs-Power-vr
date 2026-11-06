@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 package_driver.py - Validates and packages the PowerVR BXM-8-256 Mesa Vulkan driver
-for adrenotools (Eden / Azahar) and standalone ICD loaders (Winlator / Gamehub).
+as the primary Adrenotools package (Eden / Azahar).
 """
 
 import os
@@ -109,7 +109,15 @@ def build_packages():
     os.makedirs(DIST_DIR, exist_ok=True)
     cpp_runtime = find_cpp_runtime()
 
-    # 1. Adrenotools Package (Flat zip with meta.json and .so)
+    # Remove the retired secondary package if this is an incremental local build.
+    old_icd_zip = os.path.join(DIST_DIR, "vulkan_pvr_bxm8256_icd.zip")
+    if os.path.exists(old_icd_zip):
+        os.remove(old_icd_zip)
+    old_icd_dir = os.path.join(DIST_DIR, "standalone_icd")
+    if os.path.isdir(old_icd_dir):
+        shutil.rmtree(old_icd_dir)
+
+    # Primary Adrenotools package (flat ZIP with meta.json and shared libraries).
     meta = {
         "schemaVersion": 1,
         "name": "PowerVR BXM-8-256 Mesa",
@@ -129,36 +137,6 @@ def build_packages():
         z.write(cpp_runtime, arcname="libc++_shared.so")
 
     print(f"[+] Created Adrenotools package: {adrenotools_zip_path} ({os.path.getsize(adrenotools_zip_path):,} bytes)")
-
-    # 2. Standalone Vulkan ICD Package (ICD JSON manifest + .so)
-    icd_manifest = {
-        "file_format_version": "1.0.1",
-        "ICD": {
-            "library_path": "libvulkan_powervr_mesa.so",
-            # Keep the manifest conservative until the Mesa ICD has been
-            # validated against the target MT6855 device. The vendor stack
-            # reports Vulkan 1.1.170 in the captured vkjson profile.
-            "api_version": "1.1.170",
-            "library_arch": "64"
-        }
-    }
-
-    icd_dir = os.path.join(DIST_DIR, "standalone_icd")
-    os.makedirs(icd_dir, exist_ok=True)
-    manifest_path = os.path.join(icd_dir, "powervr_icd.aarch64.json")
-    with open(manifest_path, "w") as f:
-        json.dump(icd_manifest, f, indent=4)
-        f.write("\n")
-    shutil.copy2(DRIVER_SO, os.path.join(icd_dir, "libvulkan_powervr_mesa.so"))
-
-    icd_zip_path = os.path.join(DIST_DIR, "vulkan_pvr_bxm8256_icd.zip")
-    with zipfile.ZipFile(icd_zip_path, "w", zipfile.ZIP_DEFLATED) as z:
-        z.write(manifest_path, arcname="powervr_icd.aarch64.json")
-        z.write(DRIVER_SO, arcname="libvulkan_powervr_mesa.so")
-        z.write(cpp_runtime, arcname="libc++_shared.so")
-
-    print(f"[+] Created Standalone ICD package: {icd_zip_path} ({os.path.getsize(icd_zip_path):,} bytes)")
-    print(f"[+] ICD manifest created at: {manifest_path}")
 
 if __name__ == "__main__":
     check_binary()

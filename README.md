@@ -6,7 +6,7 @@ Este repositório contém os patches reproduzíveis, os testes offline de bridge
 
 ## Build
 
-A compilação Android é executada pelo GitHub Actions em um runner x86_64 com Android NDK. O workflow prepara uma base Mesa fixa, aplica os seis patches, compila as ferramentas nativas do Mesa, compila `libvulkan_powervr_mesa.so` para `aarch64-linux-android` e gera os pacotes ZIP em `dist/`.
+A compilação Android é executada pelo GitHub Actions em um runner x86_64 com Android NDK. O workflow prepara uma base Mesa fixa, aplica os seis patches, compila as ferramentas nativas do Mesa, compila `libvulkan_powervr_mesa.so` para `aarch64-linux-android` e gera somente o pacote principal Adrenotools em `dist/`.
 
 O patch 0006 altera a negociação do cliente para DDK 1.15/build 6133110. Os patches 0002 e 0003 preservam código experimental de bridge B-Series, mas o caminho usado pelo MT6855 é o caminho genérico Mesa 1.x; o cabeçalho v25 não deve ser selecionado para esse módulo.
 

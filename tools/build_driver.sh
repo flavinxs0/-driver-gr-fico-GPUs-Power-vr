@@ -67,9 +67,8 @@ echo "[*] Step 2: Compiling libvulkan_powervr_mesa.so..."
 ninja -C "${BUILD_DIR}" src/imagination/vulkan/libvulkan_powervr_mesa.so
 
 # 7. Package the driver
-echo "[*] Step 3: Packaging driver bundles..."
+echo "[*] Step 3: Packaging primary Adrenotools ZIP..."
 python3 "${ROOT_DIR}/tools/package_driver.py"
 
 echo "=== Build and Packaging Complete! ==="
-echo "Distribution packages are ready in: ${ROOT_DIR}/dist"
-
+echo "Primary Adrenotools package is ready in: ${ROOT_DIR}/dist/vulkan_pvr_bxm8256_adrenotools.zip"
