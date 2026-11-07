@@ -1,4 +1,4 @@
-From 1d3960fd72195c2ccf8a8c0706ae30191b8ddcaa Mon Sep 17 00:00:00 2001
+From db538975ca2cb3c8a3afebb7c6b92d7b54812cc6 Mon Sep 17 00:00:00 2001
 From: Manus <dev-agent@manus.ai>
 Date: Fri, 6 Nov 2026 22:00:00 +0000
 Subject: [PATCH 7/7] imagination: add MT6855 PVR enumeration diagnostics
@@ -11,7 +11,7 @@ Log DRM discovery, DDK connection, BVNC, and exposed Vulkan properties without c
  3 files changed, 94 insertions(+), 10 deletions(-)
 
 diff --git a/src/imagination/vulkan/pvr_instance.c b/src/imagination/vulkan/pvr_instance.c
-index da1f495..d7534cb 100644
+index da1f495..39bb0d3 100644
 --- a/src/imagination/vulkan/pvr_instance.c
 +++ b/src/imagination/vulkan/pvr_instance.c
 @@ -12,7 +12,9 @@
@@ -68,7 +68,7 @@ index da1f495..d7534cb 100644
 +             version->name,
 +             version->version_major,
 +             version->version_minor,
-+             version->version_patch,
++             version->version_patchlevel,
 +             is_pvr);
     drmFreeVersion(version);
     close(fd);
