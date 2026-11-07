@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # setup_mesa.sh (VERSION CORREGIDA)
-# Clona Mesa y aplica los 5 parches BXM-8-256.
+# Clona Mesa y aplica la serie de parches BXM-8-256.
 #
 # El script original usaba como base el commit fa7228e1a8ae ("Mesa 25.0.0"), pero los
 # parches estan fechados el 23-24 de octubre de 2026 y el 0005 modifica
@@ -37,7 +37,7 @@ try_base() {
     echo "[*] Probando base ${base:0:12} (${label})..."
     git checkout -q -B bxm-ddk25-offline "${base}"
     if git am --3way -q "${PATCHES_DIR}"/*.patch >/tmp/git-am.log 2>&1; then
-        echo "[+] Los 5 parches aplicaron sobre ${base}"
+        echo "[+] Todos los parches aplicaron sobre ${base}"
         echo "${base}" > "${ROOT_DIR}/BASE_COMMIT.txt"
         return 0
     fi

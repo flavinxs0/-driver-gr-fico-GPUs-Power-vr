@@ -6,7 +6,7 @@ Este repositório contém os patches reproduzíveis, os testes offline de bridge
 
 ## Build
 
-A compilação Android é executada pelo GitHub Actions em um runner x86_64 com Android NDK. O workflow prepara uma base Mesa fixa, aplica os seis patches, compila as ferramentas nativas do Mesa, compila `libvulkan_powervr_mesa.so` para `aarch64-linux-android` e gera somente o pacote principal Adrenotools em `dist/`.
+A compilação Android é executada pelo GitHub Actions em um runner x86_64 com Android NDK. O workflow prepara uma base Mesa fixa, aplica os sete patches, compila as ferramentas nativas do Mesa, compila `libvulkan_powervr_mesa.so` para `aarch64-linux-android` e gera somente o pacote principal Adrenotools em `dist/`. O patch 0007 adiciona logs temporários `PVR_DIAG` para rastrear enumeração DRM, handshake DDK, BVNC e propriedades expostas; ele não altera as capabilities nem a seleção do dispositivo.
 
 O patch 0006 altera a negociação do cliente para DDK 1.15/build 6133110. Os patches 0002 e 0003 preservam código experimental de bridge B-Series, mas o caminho usado pelo MT6855 é o caminho genérico Mesa 1.x; o cabeçalho v25 não deve ser selecionado para esse módulo.
 
@@ -18,7 +18,11 @@ O wrapper do Drive é apenas uma camada de loader/hook e não contém `libvulkan
 
 A análise dos dois logs recentes do Moto G73 está em [`evidence/dragonburst-moto-g73-2026-11-06.md`](evidence/dragonburst-moto-g73-2026-11-06.md). Ela separa o fallback do driver de sistema da falha de carregamento do wrapper e documenta por que a causa do crash Mesa ainda precisa ser capturada.
 
+A análise dos dois PDFs recém-enviados sobre o Moto G54/MT6855 está em [`evidence/moto-g54-pvr-reports-2026-11-07.md`](evidence/moto-g54-pvr-reports-2026-11-07.md). Os dados de Vulkan ali são do driver proprietário e não confirmam a enumeração do Mesa no DMC4.
+
 Para coletar propriedades, nodes gráficos, módulos, AVCs do kernel e logcat após reproduzir a falha, use `tools/collect_android_pvr_trace.sh` em um computador com Android platform-tools. O script não limpa os logs; revise e remova dados pessoais do `logcat.txt` antes de compartilhar.
+
+A descrição da instrumentação e o guia para interpretar os próximos logs estão em [`evidence/dmc4-mesa-enumeration-diagnostics-2026-11-06.md`](evidence/dmc4-mesa-enumeration-diagnostics-2026-11-06.md). A build diagnóstica ainda precisa passar pelo Actions e ser testada no aparelho; ela não é uma correção funcional do renderer.
 
 ## Estado
 

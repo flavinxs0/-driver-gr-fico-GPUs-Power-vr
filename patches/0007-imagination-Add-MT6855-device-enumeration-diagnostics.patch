@@ -1,0 +1,281 @@
+From 1d3960fd72195c2ccf8a8c0706ae30191b8ddcaa Mon Sep 17 00:00:00 2001
+From: Manus <dev-agent@manus.ai>
+Date: Fri, 6 Nov 2026 22:00:00 +0000
+Subject: [PATCH 7/7] imagination: add MT6855 PVR enumeration diagnostics
+
+Log DRM discovery, DDK connection, BVNC, and exposed Vulkan properties without changing device capabilities or selection.
+---
+ src/imagination/vulkan/pvr_instance.c         | 44 ++++++++++++++++---
+ src/imagination/vulkan/pvr_physical_device.c  | 35 ++++++++++++++-
+ .../vulkan/winsys/pvrsrvkm/pvr_srv.c          | 25 +++++++++--
+ 3 files changed, 94 insertions(+), 10 deletions(-)
+
+diff --git a/src/imagination/vulkan/pvr_instance.c b/src/imagination/vulkan/pvr_instance.c
+index da1f495..d7534cb 100644
+--- a/src/imagination/vulkan/pvr_instance.c
++++ b/src/imagination/vulkan/pvr_instance.c
+@@ -12,7 +12,9 @@
+ 
+ #include "pvr_instance.h"
+ 
++#include <errno.h>
+ #include <fcntl.h>
++#include <string.h>
+ #include <xf86drm.h>
+ #include <xf86drmMode.h>
+ 
+@@ -72,6 +74,9 @@ static VkResult pvr_get_drm_devices(void *const obj,
+ {
+    int ret = drmGetDevices2(0, devices, max_devices);
+    if (ret < 0) {
++      mesa_logw("PVR_DIAG: drmGetDevices2 failed: errno %d (%s)",
++                -ret,
++                strerror(-ret));
+       return vk_errorf(obj,
+                        VK_ERROR_INITIALIZATION_FAILED,
+                        "Failed to enumerate drm devices (errno %d: %s)",
+@@ -94,16 +99,20 @@ pvr_drm_device_is_compatible(drmDevicePtr drm_dev)
+ 
+    fd = open(drm_dev->nodes[DRM_NODE_RENDER], O_RDWR | O_CLOEXEC);
+    if (fd < 0) {
+-      mesa_logd("Failed to open render node: %s\n",
+-                drm_dev->nodes[DRM_NODE_RENDER]);
++      mesa_logw("PVR_DIAG: open render node %s failed: errno %d (%s)",
++                drm_dev->nodes[DRM_NODE_RENDER],
++                errno,
++                strerror(errno));
+ 
+       return false;
+    }
+ 
+    version = drmGetVersion(fd);
+    if (!version) {
+-      mesa_logd("Failed to get version information for render node: %s\n",
+-                drm_dev->nodes[DRM_NODE_RENDER]);
++      mesa_logw("PVR_DIAG: drmGetVersion failed for %s: errno %d (%s)",
++                drm_dev->nodes[DRM_NODE_RENDER],
++                errno,
++                strerror(errno));
+ 
+       close(fd);
+       return false;
+@@ -115,6 +124,13 @@ pvr_drm_device_is_compatible(drmDevicePtr drm_dev)
+    is_pvr |= !strcmp(version->name, PVR_SRV_DRIVER_NAME);
+ #endif /* defined(PVR_SUPPORT_SERVICES_DRIVER) */
+ 
++   mesa_logw("PVR_DIAG: render node %s reports DRM driver '%s' %d.%d.%d; PVR=%d",
++             drm_dev->nodes[DRM_NODE_RENDER],
++             version->name,
++             version->version_major,
++             version->version_minor,
++             version->version_patch,
++             is_pvr);
+    drmFreeVersion(version);
+    close(fd);
+ 
+@@ -184,11 +200,17 @@ pvr_physical_device_enumerate(struct vk_instance *const vk_instance)
+    int num_drm_devices = 0;
+    VkResult result;
+ 
++   mesa_logw("PVR_DIAG: physical-device enumeration started");
+    result = pvr_get_drm_devices(instance, NULL, 0, &num_drm_devices);
+-   if (result != VK_SUCCESS)
++   if (result != VK_SUCCESS) {
++      mesa_logw("PVR_DIAG: DRM enumeration failed with VkResult %d", result);
+       goto out;
++   }
+ 
++   mesa_logw("PVR_DIAG: drmGetDevices2 reported %d device(s)",
++             num_drm_devices);
+    if (num_drm_devices == 0) {
++      mesa_logw("PVR_DIAG: no DRM devices visible to this process");
+       result = VK_SUCCESS;
+       goto out;
+    }
+@@ -210,6 +232,10 @@ pvr_physical_device_enumerate(struct vk_instance *const vk_instance)
+    for (int i = 0; i < num_drm_devices; i++) {
+       drmDevice *const drm_dev = drm_devices[i];
+ 
++      mesa_logw("PVR_DIAG: DRM candidate %d: bustype=%d nodes=0x%x",
++                i,
++                drm_dev->bustype,
++                (unsigned)drm_dev->available_nodes);
+       if (drm_dev->bustype != DRM_BUS_PLATFORM)
+          continue;
+ 
+@@ -225,6 +251,7 @@ pvr_physical_device_enumerate(struct vk_instance *const vk_instance)
+    }
+ 
+    if (!drm_render_device) {
++      mesa_logw("PVR_DIAG: no compatible PowerVR render node found");
+       result = VK_SUCCESS;
+       goto out_free_drm_devices;
+    }
+@@ -260,11 +287,15 @@ pvr_physical_device_enumerate(struct vk_instance *const vk_instance)
+       goto out_free_drm_devices;
+    }
+ 
++   mesa_logw("PVR_DIAG: initializing render node %s",
++             drm_render_device->nodes[DRM_NODE_RENDER]);
+    result = pvr_physical_device_init(pdevice,
+                                      instance,
+                                      drm_render_device,
+                                      drm_display_device);
+    if (result != VK_SUCCESS) {
++      mesa_logw("PVR_DIAG: physical-device initialization failed: VkResult %d",
++                result);
+       if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
+          result = VK_SUCCESS;
+ 
+@@ -281,6 +312,7 @@ pvr_physical_device_enumerate(struct vk_instance *const vk_instance)
+    }
+ 
+    list_add(&pdevice->vk.link, &vk_instance->physical_devices.list);
++   mesa_logw("PVR_DIAG: published one PowerVR physical device to Vulkan");
+ 
+    result = VK_SUCCESS;
+    goto out_free_drm_devices;
+@@ -295,6 +327,8 @@ out_free_drm_device_ptrs:
+    vk_free(&vk_instance->alloc, drm_devices);
+ 
+ out:
++   mesa_logw("PVR_DIAG: physical-device enumeration returns VkResult %d",
++             result);
+    return result;
+ }
+ 
+diff --git a/src/imagination/vulkan/pvr_physical_device.c b/src/imagination/vulkan/pvr_physical_device.c
+index 0c66d7b..aecbb8f 100644
+--- a/src/imagination/vulkan/pvr_physical_device.c
++++ b/src/imagination/vulkan/pvr_physical_device.c
+@@ -1224,8 +1224,12 @@ VkResult pvr_physical_device_init(struct pvr_physical_device *pdevice,
+    result =
+       pvr_winsys_create(render_path, display_path, true,
+                         &instance->vk.alloc, &ws);
+-   if (result != VK_SUCCESS)
++   if (result != VK_SUCCESS) {
++      mesa_logw("PVR_DIAG: pvr_winsys_create failed for %s: VkResult %d",
++                render_path,
++                result);
+       goto err_vk_free_display_path;
++   }
+ 
+    pdevice->instance = instance;
+    pdevice->render_path = render_path;
+@@ -1235,8 +1239,12 @@ VkResult pvr_physical_device_init(struct pvr_physical_device *pdevice,
+    result = ws->ops->device_info_init(ws,
+                                       &pdevice->dev_info,
+                                       &pdevice->dev_runtime_info);
+-   if (result != VK_SUCCESS)
++   if (result != VK_SUCCESS) {
++      mesa_logw("PVR_DIAG: device_info_init failed for %s: VkResult %d",
++                render_path,
++                result);
+       goto err_pvr_winsys_destroy;
++   }
+ 
+    if (!pvr_device_is_conformant(&pdevice->dev_info)) {
+       if (!os_get_option("PVR_I_WANT_A_BROKEN_VULKAN_DRIVER")) {
+@@ -1269,12 +1277,29 @@ VkResult pvr_physical_device_init(struct pvr_physical_device *pdevice,
+    pvr_physical_device_get_supported_features(&pdevice->dev_info,
+                                               &supported_features);
+    if (!pvr_physical_device_get_properties(pdevice, &supported_properties)) {
++      mesa_logw("PVR_DIAG: property construction failed for BVNC %u.%u.%u.%u",
++                pdevice->dev_info.ident.b,
++                pdevice->dev_info.ident.v,
++                pdevice->dev_info.ident.n,
++                pdevice->dev_info.ident.c);
+       result = vk_errorf(instance,
+                          VK_ERROR_INITIALIZATION_FAILED,
+                          "Failed to collect physical device properties");
+       goto err_pvr_winsys_destroy;
+    }
+ 
++   mesa_logw("PVR_DIAG: exposed properties name='%s' vendor=0x%x device=0x%x api=0x%x driver='%s' info='%s'; BVNC %u.%u.%u.%u",
++             supported_properties.deviceName,
++             supported_properties.vendorID,
++             supported_properties.deviceID,
++             supported_properties.apiVersion,
++             supported_properties.driverName,
++             supported_properties.driverInfo,
++             pdevice->dev_info.ident.b,
++             pdevice->dev_info.ident.v,
++             pdevice->dev_info.ident.n,
++             pdevice->dev_info.ident.c);
++
+    vk_physical_device_dispatch_table_from_entrypoints(
+       &dispatch_table,
+       &pvr_physical_device_entrypoints,
+@@ -1325,6 +1350,11 @@ VkResult pvr_physical_device_init(struct pvr_physical_device *pdevice,
+       goto err_free_pco_ctx;
+    }
+ 
++   mesa_logw("PVR_DIAG: physical device fully initialized for BVNC %u.%u.%u.%u",
++             pdevice->dev_info.ident.b,
++             pdevice->dev_info.ident.v,
++             pdevice->dev_info.ident.n,
++             pdevice->dev_info.ident.c);
+    return VK_SUCCESS;
+ 
+ err_free_pco_ctx:
+@@ -1346,6 +1376,7 @@ err_vk_free_render_path:
+    vk_free(&instance->vk.alloc, render_path);
+ 
+ err_out:
++   mesa_logw("PVR_DIAG: pvr_physical_device_init exits with VkResult %d", result);
+    return result;
+ }
+ 
+diff --git a/src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv.c b/src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv.c
+index 2b74514..eedef39 100644
+--- a/src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv.c
++++ b/src/imagination/vulkan/winsys/pvrsrvkm/pvr_srv.c
+@@ -736,16 +736,30 @@ VkResult pvr_srv_winsys_create(const int render_fd,
+    uint64_t bvnc;
+    uint32_t ddk_maj = 0, ddk_min = 0;
+ 
+-   if (!pvr_is_driver_compatible(render_fd, &ddk_maj, &ddk_min))
++   if (!pvr_is_driver_compatible(render_fd, &ddk_maj, &ddk_min)) {
++      mesa_logw("PVR_DIAG: render node rejected by DDK compatibility check");
+       return VK_ERROR_INCOMPATIBLE_DRIVER;
++   }
+ 
++   mesa_logw("PVR_DIAG: attempting Services init for DDK %u.%u",
++             ddk_maj,
++             ddk_min);
+    result = pvr_srv_init_module(render_fd, PVR_SRVKM_MODULE_TYPE_SERVICES);
+-   if (result != VK_SUCCESS)
++   if (result != VK_SUCCESS) {
++      mesa_logw("PVR_DIAG: Services init failed: VkResult %d", result);
+       goto err_out;
++   }
+ 
+    result = pvr_srv_connection_create(render_fd, &bvnc);
+-   if (result != VK_SUCCESS)
++   if (result != VK_SUCCESS) {
++      mesa_logw("PVR_DIAG: DDK bridge connect failed: VkResult %d", result);
+       goto err_out;
++   }
++   mesa_logw("PVR_DIAG: DDK bridge connected; BVNC %u.%u.%u.%u",
++             PVR_BVNC_UNPACK_B(bvnc),
++             PVR_BVNC_UNPACK_V(bvnc),
++             PVR_BVNC_UNPACK_N(bvnc),
++             PVR_BVNC_UNPACK_C(bvnc));
+ 
+    srv_ws =
+       vk_zalloc(alloc, sizeof(*srv_ws), 8, VK_SYSTEM_ALLOCATION_SCOPE_DEVICE);
+@@ -759,6 +773,11 @@ VkResult pvr_srv_winsys_create(const int render_fd,
+ 
+    int ret = pvr_device_info_init(&srv_ws->dev_info, bvnc);
+    if (ret) {
++      mesa_logw("PVR_DIAG: BVNC %u.%u.%u.%u is absent from Mesa device table",
++                PVR_BVNC_UNPACK_B(bvnc),
++                PVR_BVNC_UNPACK_V(bvnc),
++                PVR_BVNC_UNPACK_N(bvnc),
++                PVR_BVNC_UNPACK_C(bvnc));
+       return vk_errorf(NULL,
+                        VK_ERROR_INCOMPATIBLE_DRIVER,
+                        "Unsupported BVNC: %u.%u.%u.%u\n",
+-- 
+2.43.0
+

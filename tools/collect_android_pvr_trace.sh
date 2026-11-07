@@ -3,7 +3,7 @@
 # Usage: tools/collect_android_pvr_trace.sh [output-dir] [package-name]
 set -euo pipefail
 OUT="${1:-pvr-trace-$(date +%Y%m%d-%H%M%S)}"
-PKG="${2:-com.dfdx047.dragonburst}"
+PKG="${2:-io.github.belmantegu.dmc4recomp}"
 ADB="${ADB:-adb}"
 mkdir -p "$OUT"
 command -v "$ADB" >/dev/null 2>&1 || { echo "adb not found; install Android platform-tools or set ADB=/path/to/adb" >&2; exit 1; }
